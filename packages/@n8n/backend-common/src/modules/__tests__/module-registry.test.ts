@@ -24,6 +24,19 @@ describe('eligibleModules', () => {
 			'external-secrets',
 			'community-packages',
 			'data-table',
+			'mcp',
+			'provisioning',
+			'breaking-changes',
+			'source-control',
+			'dynamic-credentials',
+			'chat-hub',
+			'sso-oidc',
+			'sso-saml',
+			'log-streaming',
+			'ldap',
+			'quick-connect',
+			'workflow-builder',
+			'redaction',
 		]);
 	});
 
@@ -34,6 +47,19 @@ describe('eligibleModules', () => {
 			'external-secrets',
 			'community-packages',
 			'data-table',
+			'mcp',
+			'provisioning',
+			'breaking-changes',
+			'source-control',
+			'dynamic-credentials',
+			'chat-hub',
+			'sso-oidc',
+			'sso-saml',
+			'log-streaming',
+			'ldap',
+			'quick-connect',
+			'workflow-builder',
+			'redaction',
 		]);
 	});
 
@@ -91,7 +117,7 @@ describe('initModules', () => {
 
 		const moduleRegistry = new ModuleRegistry(moduleMetadata, mock(), mock(), mock());
 
-		await moduleRegistry.initModules();
+		await moduleRegistry.initModules('main');
 
 		expect(ModuleClass.init).toHaveBeenCalled();
 	});
@@ -110,7 +136,7 @@ describe('initModules', () => {
 
 		const moduleRegistry = new ModuleRegistry(moduleMetadata, licenseState, mock(), mock());
 
-		await moduleRegistry.initModules();
+		await moduleRegistry.initModules('main');
 
 		expect(ModuleClass.init).toHaveBeenCalled();
 	});
@@ -129,7 +155,7 @@ describe('initModules', () => {
 
 		const moduleRegistry = new ModuleRegistry(moduleMetadata, licenseState, mock(), mock());
 
-		await moduleRegistry.initModules();
+		await moduleRegistry.initModules('main');
 
 		expect(ModuleClass.init).not.toHaveBeenCalled();
 	});
@@ -146,9 +172,9 @@ describe('initModules', () => {
 
 		const moduleRegistry = new ModuleRegistry(moduleMetadata, mock(), mock(), mock());
 
-		await moduleRegistry.initModules();
+		await moduleRegistry.initModules('main');
 
-		await expect(moduleRegistry.initModules()).resolves.not.toThrow();
+		await expect(moduleRegistry.initModules('main')).resolves.not.toThrow();
 	});
 
 	it('registers settings', async () => {
@@ -167,7 +193,7 @@ describe('initModules', () => {
 		const moduleRegistry = new ModuleRegistry(moduleMetadata, mock(), mock(), mock());
 
 		// ACT
-		await moduleRegistry.initModules();
+		await moduleRegistry.initModules('main');
 
 		// ASSERT
 		expect(ModuleClass.settings).toHaveBeenCalled();
@@ -191,7 +217,7 @@ describe('initModules', () => {
 		const moduleRegistry = new ModuleRegistry(moduleMetadata, mock(), mock(), mock());
 
 		// ACT
-		await moduleRegistry.initModules();
+		await moduleRegistry.initModules('main');
 
 		// ASSERT
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -213,7 +239,7 @@ describe('initModules', () => {
 		const moduleRegistry = new ModuleRegistry(moduleMetadata, mock(), mock(), mock());
 
 		// ACT
-		await moduleRegistry.initModules();
+		await moduleRegistry.initModules('main');
 
 		// ASSERT
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -237,7 +263,7 @@ describe('initModules', () => {
 		const moduleRegistry = new ModuleRegistry(moduleMetadata, mock(), mock(), mock());
 
 		// ACT
-		await moduleRegistry.initModules();
+		await moduleRegistry.initModules('main');
 
 		// ASSERT
 		expect(ModuleClass.context).toHaveBeenCalled();
@@ -257,10 +283,44 @@ describe('initModules', () => {
 		const moduleRegistry = new ModuleRegistry(moduleMetadata, mock(), mock(), mock());
 
 		// ACT
-		await moduleRegistry.initModules();
+		await moduleRegistry.initModules('main');
 
 		// ASSERT
 		expect(moduleRegistry.context.has(moduleName)).toBe(false);
+	});
+
+	it('should init module with matching instance type', async () => {
+		const ModuleClass = { init: jest.fn() };
+		const moduleMetadata = mock<ModuleMetadata>({
+			getEntries: jest
+				.fn()
+				.mockReturnValue([
+					['test-module', { instanceTypes: ['main', 'worker'], class: ModuleClass }],
+				]),
+		});
+		Container.get = jest.fn().mockReturnValue(ModuleClass);
+
+		const moduleRegistry = new ModuleRegistry(moduleMetadata, mock(), mock(), mock());
+
+		await moduleRegistry.initModules('main');
+
+		expect(ModuleClass.init).toHaveBeenCalled();
+	});
+
+	it('should skip init for module with non-matching instance type', async () => {
+		const ModuleClass = { init: jest.fn() };
+		const moduleMetadata = mock<ModuleMetadata>({
+			getEntries: jest
+				.fn()
+				.mockReturnValue([['test-module', { instanceTypes: ['worker'], class: ModuleClass }]]),
+		});
+		Container.get = jest.fn().mockReturnValue(ModuleClass);
+
+		const moduleRegistry = new ModuleRegistry(moduleMetadata, mock(), mock(), mock());
+
+		await moduleRegistry.initModules('main');
+
+		expect(ModuleClass.init).not.toHaveBeenCalled();
 	});
 });
 
